@@ -8,7 +8,7 @@ const User = require('../models/User');
 
 const createAdminStaffUsers = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/shopsphere';
+    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/shopsphere';
     console.log(`[Add Users] Connecting to MongoDB: ${mongoUri}`);
     await mongoose.connect(mongoUri);
 
