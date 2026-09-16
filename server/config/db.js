@@ -1,4 +1,10 @@
+const dns = require('dns');
 const mongoose = require('mongoose');
+
+// Configure reliable DNS servers for Atlas SRV resolution
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {}
 
 // Mask sensitive credentials in MongoDB URI for safe logging
 const maskURI = (uri) => {
