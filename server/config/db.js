@@ -19,15 +19,22 @@ const connectDB = async () => {
     throw new Error('No MongoDB connection string provided in environment variables.');
   }
 
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
   try {
     console.log(`[Database] Connecting to: ${maskURI(mongoURI)}`);
     const conn = await mongoose.connect(mongoURI, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 30000,
+      connectTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
     });
     console.log(`[Database] MongoDB Connected successfully to host: ${conn.connection.host} (${conn.connection.name})`);
+    return conn;
   } catch (error) {
     console.error(`[Database Error] Connection Failed: ${error.message}`);
-    process.exit(1);
+    throw error;
   }
 };
 
