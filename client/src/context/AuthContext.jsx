@@ -31,7 +31,8 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await authAPI.login({ email, password });
+      const sanitizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+      const res = await authAPI.login({ email: sanitizedEmail, password });
       const { user: userData, accessToken, refreshToken } = res.data.data;
       localStorage.setItem('shopsphere_access_token', accessToken);
       localStorage.setItem('shopsphere_refresh_token', refreshToken);
@@ -42,7 +43,10 @@ export const AuthProvider = ({ children }) => {
       return userData;
     } catch (err) {
       setLoading(false);
-      const msg = err.response?.data?.message || 'Login failed. Check your credentials.';
+      const isNetworkError = !err.response || err.code === 'ERR_NETWORK' || err.message === 'Network Error';
+      const msg = err.response?.data?.message || (isNetworkError
+        ? 'Cannot connect to backend API server. Please verify your backend service is running and VITE_API_URL is configured.'
+        : 'Invalid credentials. Please check your email and password.');
       setError(msg);
       throw new Error(msg);
     }

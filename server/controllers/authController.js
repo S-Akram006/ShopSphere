@@ -27,7 +27,8 @@ exports.register = async (req, res, next) => {
   try {
     const { name, email, password, role, storeName, storeDescription, phone } = req.body;
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'User already exists with this email' });
     }
@@ -39,8 +40,8 @@ exports.register = async (req, res, next) => {
     const assignedRole = validRoles.includes(role) ? role : 'Customer';
 
     const user = await User.create({
-      name,
-      email: email.toLowerCase(),
+      name: typeof name === 'string' ? name.trim() : name,
+      email: cleanEmail,
       passwordHash,
       role: assignedRole,
       phone: phone || '',
@@ -93,7 +94,8 @@ exports.login = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Please provide email and password' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const user = await User.findOne({ email: cleanEmail });
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
