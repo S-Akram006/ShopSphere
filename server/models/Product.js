@@ -61,6 +61,13 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: [0, 'Discount price must be non-negative'],
+      validate: {
+        validator: function (val) {
+          if (!val || val === 0) return true;
+          return this.price !== undefined ? val < this.price : true;
+        },
+        message: 'Discount price must be strictly less than the base price',
+      },
     },
     stock: {
       type: Number,
