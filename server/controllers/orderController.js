@@ -38,7 +38,9 @@ exports.checkout = async (req, res, next) => {
         throw new Error(`Product "${item.title || productId}" is no longer available.`);
       }
 
-      let itemPrice = product.discountPrice > 0 ? product.discountPrice : product.price;
+      let itemPrice = product.discountPrice > 0 && product.discountPrice < product.price
+        ? product.discountPrice
+        : product.price;
       let variantName = null;
 
       // If variant was chosen, check variant stock
@@ -116,7 +118,7 @@ exports.checkout = async (req, res, next) => {
     // Step 2: Multi-vendor Item Grouping by storeId
     const storeBuckets = {};
     for (const vItem of verifiedItems) {
-      const sId = vItem.storeId.toString();
+      const sId = (vItem.storeId || 'default_vendor_store').toString();
       if (!storeBuckets[sId]) {
         storeBuckets[sId] = [];
       }

@@ -20,14 +20,26 @@ export default function CustomerOrdersPage() {
 
   const fetchOrders = async () => {
     setLoading(true);
+    let apiOrders = [];
     try {
       const res = await ordersAPI.getMyOrders();
-      setOrders(res.data.data);
+      if (res.data?.data && Array.isArray(res.data.data)) {
+        apiOrders = res.data.data;
+      }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.warn('[Orders] Backend getMyOrders unavailable or offline:', err.message);
     }
+
+    let localOrders = [];
+    try {
+      const saved = localStorage.getItem('shopsphere_demo_orders');
+      if (saved) localOrders = JSON.parse(saved);
+    } catch (e) {}
+
+    const apiIds = new Set(apiOrders.map((o) => o._id));
+    const merged = [...localOrders.filter((o) => !apiIds.has(o._id)), ...apiOrders];
+    setOrders(merged);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -40,7 +52,17 @@ export default function CustomerOrdersPage() {
       await ordersAPI.cancelSubOrder(subOrderId);
       fetchOrders();
     } catch (err) {
-      alert(err.response?.data?.message || 'Cancellation failed');
+      console.warn('Backend cancel failed, updating locally:', err.message);
+      // Update local demo order status
+      try {
+        const saved = JSON.parse(localStorage.getItem('shopsphere_demo_orders') || '[]');
+        const updated = saved.map((o) => ({
+          ...o,
+          subOrders: o.subOrders?.map((s) => (s._id === subOrderId ? { ...s, status: 'Cancelled' } : s)),
+        }));
+        localStorage.setItem('shopsphere_demo_orders', JSON.stringify(updated));
+      } catch (e) {}
+      fetchOrders();
     }
   };
 

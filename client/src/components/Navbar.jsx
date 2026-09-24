@@ -220,10 +220,10 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <div className="hidden sm:flex flex-col text-right">
                   <span className="text-xs font-bold text-slate-900 leading-tight">
-                    {user.name.split(' ')[0]}
+                    {(user.name || 'User').split(' ')[0]}
                   </span>
                   <span className="text-[10px] text-slate-500 font-medium">
-                    {user.role}
+                    {user.role || 'Member'}
                   </span>
                 </div>
                 <button

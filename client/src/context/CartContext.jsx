@@ -25,7 +25,7 @@ export const CartProvider = ({ children }) => {
 
       const price = selectedVariant
         ? selectedVariant.price
-        : product.discountPrice > 0
+        : product.discountPrice > 0 && product.discountPrice < product.price
         ? product.discountPrice
         : product.price;
 

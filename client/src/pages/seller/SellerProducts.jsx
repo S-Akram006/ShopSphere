@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { sellerAPI, productsAPI, aiAPI, uploadAPI } from '../../services/api';
+import { DEFAULT_CATALOG_ITEMS } from '../../services/catalogConstants';
 import {
   Plus,
   Trash2,
@@ -55,65 +56,7 @@ export default function SellerProducts() {
   const [varPrice, setVarPrice] = useState('');
   const [varStock, setVarStock] = useState('');
 
-  const DEFAULT_CATALOG_ITEMS = [
-    {
-      _id: 'demo-prod-1',
-      title: 'QuantumBook Pro M3 16-inch Workstation',
-      description: 'Ultimate power for engineers, creators, and AI researchers with neural engine accelerators, Liquid Retina XDR 120Hz display, and 24-hour battery endurance.',
-      category: 'Electronics',
-      tags: ['laptop', 'workstation', 'm3', 'apple', 'developer', 'electronics', 'pro'],
-      price: 2499.0,
-      discountPrice: 2299.0,
-      stock: 35,
-      images: [
-        'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=800&q=80',
-      ],
-      variants: [
-        { sku: 'QBK-16-512GB-SPACE', attributes: { color: 'Space Gray', storage: '512GB' }, price: 2299.0, stock: 15 },
-        { sku: 'QBK-16-1TB-SPACE', attributes: { color: 'Space Gray', storage: '1TB' }, price: 2599.0, stock: 12 },
-      ],
-      ratingAverage: 4.9,
-      ratingCount: 18,
-      isApproved: true,
-    },
-    {
-      _id: 'demo-prod-2',
-      title: 'Aura ANC Wireless Noise-Cancelling Headphones',
-      description: 'Immersive spatial audio with custom 40mm titanium dynamic drivers, hybrid active noise cancellation, and plush memory foam headband for all-day focus.',
-      category: 'Audio',
-      tags: ['headphones', 'anc', 'wireless', 'bluetooth', 'audio', 'noise-cancelling', 'music'],
-      price: 349.0,
-      discountPrice: 299.0,
-      stock: 60,
-      images: [
-        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
-      ],
-      variants: [
-        { sku: 'AURA-BLK', attributes: { color: 'Matte Black' }, price: 299.0, stock: 30 },
-      ],
-      ratingAverage: 4.8,
-      ratingCount: 42,
-      isApproved: true,
-    },
-    {
-      _id: 'demo-prod-3',
-      title: 'ApexErgo Mechanical Wireless Keyboard (Hot-Swap)',
-      description: 'Precision typing instrument with aircraft-grade aluminum chassis, south-facing RGB per-key illumination, and lubed mechanical switches for buttery acoustics.',
-      category: 'Electronics',
-      tags: ['keyboard', 'mechanical', 'rgb', 'gadget', 'wireless', 'accessories'],
-      price: 189.0,
-      discountPrice: 159.0,
-      stock: 45,
-      images: [
-        'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80',
-      ],
-      variants: [],
-      ratingAverage: 4.7,
-      ratingCount: 29,
-      isApproved: true,
-    },
-  ];
+
 
   const fetchProducts = async () => {
     setLoading(true);

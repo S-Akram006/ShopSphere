@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { productsAPI, aiAPI } from '../services/api';
+import { DEFAULT_CATALOG_ITEMS } from '../services/catalogConstants';
 import { useCart } from '../context/CartContext';
 import { useLocation } from '../context/LocationContext';
 import {
@@ -37,28 +38,66 @@ export default function HomePage() {
 
   const fetchProducts = async () => {
     setLoading(true);
+    let items = [];
+    let cats = [];
+
     try {
       if (isAiSearch && keyword.trim()) {
         const res = await aiAPI.semanticSearch(keyword.trim());
-        setProducts(res.data.data);
-        setAiIntents(res.data.detectedIntents || []);
+        items = res.data?.data || [];
+        setAiIntents(res.data?.detectedIntents || []);
       } else {
         const res = await productsAPI.getAll({
           keyword: keyword.trim() || undefined,
           category: selectedCategory !== 'All' ? selectedCategory : undefined,
           sortBy,
         });
-        setProducts(res.data.data);
-        if (res.data.categories) {
-          setCategories(['All', ...res.data.categories]);
+        items = res.data?.data || [];
+        if (res.data?.categories) {
+          cats = res.data.categories;
         }
         setAiIntents([]);
       }
     } catch (err) {
-      console.error('Failed to load products:', err);
-    } finally {
-      setLoading(false);
+      console.warn('[HomePage] Backend products unavailable, reading local catalog:', err.message);
     }
+
+    // Merge with any custom products created locally
+    let custom = [];
+    try {
+      const saved = localStorage.getItem('shopsphere_custom_products');
+      if (saved) custom = JSON.parse(saved);
+    } catch (e) {}
+
+    if (items.length === 0 && custom.length === 0) {
+      items = DEFAULT_CATALOG_ITEMS;
+    }
+
+    const itemIds = new Set(items.map((p) => p._id));
+    let merged = [...custom.filter((c) => !itemIds.has(c._id)), ...items];
+
+    // Filter by category if selected
+    if (selectedCategory !== 'All') {
+      merged = merged.filter((p) => p.category?.toLowerCase() === selectedCategory.toLowerCase());
+    }
+
+    // Filter by keyword if present
+    if (keyword.trim()) {
+      const term = keyword.trim().toLowerCase();
+      merged = merged.filter(
+        (p) =>
+          p.title?.toLowerCase().includes(term) ||
+          p.description?.toLowerCase().includes(term) ||
+          p.tags?.some((t) => t.toLowerCase().includes(term))
+      );
+    }
+
+    setProducts(merged);
+
+    // Extract categories
+    const allCategories = Array.from(new Set(DEFAULT_CATALOG_ITEMS.map((p) => p.category).concat(cats)));
+    setCategories(['All', ...allCategories]);
+    setLoading(false);
   };
 
   useEffect(() => {
