@@ -21,9 +21,56 @@ exports.generateDescription = async (req, res, next) => {
       .map(([k, v]) => `${k}: ${v}`)
       .join(', ');
 
-    // Check if OpenAI key exists in environment
+    // 1. Check if Google Gemini key exists in environment
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (geminiKey) {
+      try {
+        console.log('[AI Service] Invoking Google Gemini for product:', title);
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+        const promptText = `You are an expert e-commerce copywriter. Return ONLY valid JSON (no markdown formatting, no backticks, no code block) with these fields:
+{
+  "tagline": "A punchy catchy tagline",
+  "description": "Rich 2-paragraph persuasive marketing copy",
+  "keyFeatures": ["Feature 1 with explanation", "Feature 2 with explanation", "Feature 3 with explanation", "Feature 4", "Feature 5"],
+  "seoKeywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "targetAudienceSummary": "One sentence describing ideal buyers"
+}
+Product Title: ${title}
+Category: ${category || 'General'}
+Key Specs: ${specEntries || 'Standard premium specifications'}
+Keywords: ${keywordList || title}
+Target: ${targetAudience || 'Modern Consumers'}`;
+
+        const response = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) {
+            const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(cleaned);
+            return res.json({ success: true, source: 'gemini', data: parsed });
+          }
+        } else {
+          const errText = await response.text();
+          console.warn('[AI Service] Gemini API returned error:', response.status, errText);
+        }
+      } catch (geminiErr) {
+        console.warn('[AI Service] Gemini invocation failed:', geminiErr.message);
+      }
+    }
+
+    // 2. Check if OpenAI key exists in environment
     if (process.env.OPENAI_API_KEY) {
       try {
+        console.log('[AI Service] Invoking OpenAI for product:', title);
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -51,12 +98,16 @@ exports.generateDescription = async (req, res, next) => {
           const data = await response.json();
           const content = JSON.parse(data.choices[0].message.content);
           return res.json({ success: true, source: 'openai', data: content });
+        } else {
+          const errText = await response.text();
+          console.warn('[AI Service] OpenAI API returned error:', response.status, errText);
         }
       } catch (err) {
         console.warn('[AI Service] OpenAI fallback triggered:', err.message);
       }
     }
 
+    console.log('[AI Service] Using built-in high-converting NLP synthesis engine for:', title);
     // Built-in Enterprise NLP Generation Engine (Fast, High Quality, Zero external dependency requirement)
     const adjectives = ['Next-Generation', 'Engineered for Excellence', 'Ultra-Refined', 'Precision-Crafted', 'Ergonomically Mastered'];
     const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
