@@ -74,32 +74,32 @@ export function tokenMatchesWord(queryToken, targetWord) {
   // Exact or prefix match
   if (tWord.includes(qToken) || qToken.includes(tWord)) return true;
 
-  // Check stem variations (plurals/singulars)
+  // Check exact stem variations (e.g., 'keyboards' <-> 'keyboard', 'headphones' <-> 'headphone')
   const qVariations = getWordVariations(qToken);
   const tVariations = getWordVariations(tWord);
 
   for (const qv of qVariations) {
     for (const tv of tVariations) {
-      if (qv === tv || tv.includes(qv) || qv.includes(tv)) {
-        return true;
-      }
+      if (qv === tv) return true;
     }
   }
 
-  // Levenshtein typo tolerance based on word length
+  // Direct Levenshtein typo tolerance based on word length
   const minLen = Math.min(qToken.length, tWord.length);
-  const allowedDistance = minLen <= 3 ? 0 : minLen <= 5 ? 1 : 2;
+  const maxLen = Math.max(qToken.length, tWord.length);
+  // Avoid matching words with vastly different lengths
+  if (maxLen - minLen <= 2) {
+    const allowedDistance = minLen <= 3 ? 0 : minLen <= 5 ? 1 : 2;
+    if (levenshteinDistance(qToken, tWord) <= allowedDistance) {
+      return true;
+    }
 
-  // Check direct distance
-  if (levenshteinDistance(qToken, tWord) <= allowedDistance) {
-    return true;
-  }
-
-  // Check distance against stems
-  for (const qv of qVariations) {
-    for (const tv of tVariations) {
-      if (levenshteinDistance(qv, tv) <= allowedDistance) {
-        return true;
+    // Single typo in stem variations (e.g. 'headphnes' -> stem 'headphne' <-> 'headphone')
+    for (const qv of qVariations) {
+      for (const tv of tVariations) {
+        if (Math.abs(qv.length - tv.length) <= 1 && levenshteinDistance(qv, tv) <= 1) {
+          return true;
+        }
       }
     }
   }
