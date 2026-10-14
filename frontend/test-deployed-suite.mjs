@@ -1,4 +1,4 @@
-import puppeteer from './client/node_modules/puppeteer-core/lib/puppeteer/puppeteer-core.js';
+import puppeteer from './node_modules/puppeteer-core/lib/puppeteer/puppeteer-core.js';
 
 const DEPLOYED_URL = process.env.TEST_URL || 'https://shop-sphere-lovat-tau.vercel.app';
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';

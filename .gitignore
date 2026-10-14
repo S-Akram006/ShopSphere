@@ -1,25 +1,37 @@
 # Dependencies
 node_modules/
 */node_modules/
+frontend/node_modules/
+backend/node_modules/
 
-# Environment Variables
+# Environment Variables & Local Secrets
 .env
 .env.*
-!.env.example
 *.env
 */.env
 */.env.*
+!.env.example
 !*/.env.example
+!frontend/.env.example
+!backend/.env.example
 
-# Build & Production Artifacts
+# Production & Build Artifacts
 dist/
 dist-ssr/
 build/
 */dist/
 */dist-ssr/
 */build/
+frontend/dist/
+backend/build/
 
-# Logs
+# Coverage & Test Dumps
+coverage/
+*/coverage/
+*.lcov
+.nyc_output/
+
+# Logs & Debuggers
 logs/
 *.log
 npm-debug.log*
@@ -27,7 +39,11 @@ yarn-debug.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Editor & OS files
+# Static User Uploads (Preserve directory structure)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# System & Editor Clutter
 .DS_Store
 Thumbs.db
 .vscode/*
@@ -38,7 +54,3 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
-
-# Uploads
-server/uploads/*
-!server/uploads/.gitkeep

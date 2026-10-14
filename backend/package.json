@@ -1,5 +1,5 @@
 {
-  "name": "shopsphere-server",
+  "name": "backend",
   "version": "1.0.0",
   "description": "Enterprise Multi-Vendor E-Commerce Backend for ShopSphere",
   "main": "server.js",
