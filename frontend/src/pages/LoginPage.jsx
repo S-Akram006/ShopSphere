@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ShoppingBag, LogIn, AlertCircle } from 'lucide-react';
@@ -8,9 +8,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [emailActive, setEmailActive] = useState(false);
+  const [pwdActive, setPwdActive] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Explicitly wipe any pre-filled credentials on mount
+  useEffect(() => {
+    setEmail('');
+    setPassword('');
+    setErrorMsg(null);
+  }, []);
 
   const handleLogin = async (e) => {
     if (e) e.preventDefault();
@@ -58,14 +67,45 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4 text-xs">
+        <form
+          onSubmit={handleLogin}
+          autoComplete="off"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck="false"
+          className="space-y-4 text-xs"
+        >
+          {/* Hidden autofill traps to absorb browser credential manager auto-injections */}
+          <input
+            type="text"
+            name="prevent_autofill_username"
+            style={{ display: 'none' }}
+            tabIndex="-1"
+            autoComplete="off"
+            aria-hidden="true"
+          />
+          <input
+            type="password"
+            name="prevent_autofill_password"
+            style={{ display: 'none' }}
+            tabIndex="-1"
+            autoComplete="new-password"
+            aria-hidden="true"
+          />
+
           <div>
             <label className="block font-bold text-slate-700 mb-1">
               Email Address
             </label>
             <input
               type="email"
+              id="login-email-input"
+              name="user_login_email_no_autofill"
               required
+              readOnly={!emailActive}
+              onFocus={() => setEmailActive(true)}
+              onPointerDown={() => setEmailActive(true)}
+              autoComplete="off"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="e.g. admin@shopsphere.com"
@@ -79,7 +119,13 @@ export default function LoginPage() {
             </label>
             <input
               type="password"
+              id="login-password-input"
+              name="user_login_credential_no_autofill"
               required
+              readOnly={!pwdActive}
+              onFocus={() => setPwdActive(true)}
+              onPointerDown={() => setPwdActive(true)}
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
