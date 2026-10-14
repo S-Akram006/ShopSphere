@@ -95,15 +95,23 @@ export default function ProductDetailPage() {
       pool = [...custom, ...pool];
     } catch (e) {}
 
-    const alts = pool.filter(
+    let alts = pool.filter(
       (p) =>
         p._id !== product._id &&
         p.stock > 0 &&
         (p.category?.toLowerCase() === product.category?.toLowerCase() ||
           p.tags?.some((t) => product.tags?.includes(t)))
-    ).slice(0, 4);
+    );
 
-    setAlternatives(alts);
+    // If fewer than 2 matched category/tags, include other verified in-stock catalog items
+    if (alts.length < 2) {
+      const others = pool.filter(
+        (p) => p._id !== product._id && p.stock > 0 && !alts.some((a) => a._id === p._id)
+      );
+      alts = [...alts, ...others];
+    }
+
+    setAlternatives(alts.slice(0, 4));
   }, [product]);
 
   const handleAddToCart = () => {
@@ -615,7 +623,7 @@ export default function ProductDetailPage() {
 
       {/* Recommended Alternative In-Stock Products Section */}
       {alternatives.length > 0 && (
-        <section className="pt-10 border-t border-slate-200 space-y-6">
+        <section id="recommended-alternatives-section" className="pt-10 border-t border-slate-200 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-1">

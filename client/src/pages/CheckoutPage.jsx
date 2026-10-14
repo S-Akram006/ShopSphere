@@ -118,7 +118,8 @@ export default function CheckoutPage() {
     return Object.keys(fieldLabels).filter((key) => !!fieldErrors[key]);
   }, [fieldErrors]);
 
-  const isFormValid = incompleteFields.length === 0 && cartItems.length > 0;
+  const hasIncompleteFields = incompleteFields.length > 0;
+  const isFormValid = !hasIncompleteFields && cartItems.length > 0;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -158,6 +159,9 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     setError(null);
+
+    // Realistic simulated payment processing delay to guarantee overlay visibility and prevent duplicate submissions
+    await new Promise((resolve) => setTimeout(resolve, 1200));
 
     try {
       const itemsPayload = cartItems.map((item) => ({
@@ -765,7 +769,7 @@ export default function CheckoutPage() {
             </div>
 
             {/* Incomplete Form Helper Text */}
-            {!isFormValid && (
+            {hasIncompleteFields && (
               <div
                 id="checkout-incomplete-helper"
                 role="status"
