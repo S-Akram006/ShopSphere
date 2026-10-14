@@ -1,14 +1,17 @@
 import axios from 'axios';
 
+// Standard remote Render backend URL for production
+const RENDER_BACKEND_URL = 'https://shopsphere-backend.onrender.com';
+
 const RAW_BASE =
   import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' &&
   window.location.hostname !== 'localhost' &&
   window.location.hostname !== '127.0.0.1'
-    ? window.location.origin
+    ? RENDER_BACKEND_URL
     : 'http://localhost:5000');
 
-// Strip trailing slashes and normalize base URL (remove trailing /api so we cleanly attach /api)
+// Strip trailing slashes and normalize base URL (remove trailing /api so endpoints attach /api/...)
 export const API_BASE_URL = RAW_BASE.replace(/\/+$/, '').replace(/\/api$/, '');
 
 const api = axios.create({
