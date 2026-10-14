@@ -100,10 +100,27 @@ export const ordersAPI = {
 
 // Seller Endpoints
 export const sellerAPI = {
-  getDashboard: () => api.get('/seller/dashboard'),
+  getDashboard: (params) => api.get('/seller/dashboard', { params }),
   getOrders: (params) => api.get('/seller/orders', { params }),
   updateOrderStatus: (subOrderId, data) => api.put(`/seller/orders/${subOrderId}/status`, data),
   getProducts: () => api.get('/seller/products'),
+  restockProduct: (productId, data) => api.put(`/seller/products/${productId}/restock`, data),
+  requestPayout: () => api.post('/seller/payout'),
+};
+
+// Coupons Endpoints
+export const couponsAPI = {
+  apply: (data) => api.post('/coupons/apply', data),
+  getActive: () => api.get('/coupons'),
+  create: (data) => api.post('/coupons', data),
+};
+
+// Real-Time Chat Endpoints
+export const chatAPI = {
+  getConversations: () => api.get('/chat/conversations'),
+  getMessages: (conversationId) => api.get(`/chat/messages/${conversationId}`),
+  sendMessage: (data) => api.post('/chat/messages', data),
+  markRead: (conversationId) => api.put(`/chat/read/${conversationId}`),
 };
 
 // Admin Endpoints

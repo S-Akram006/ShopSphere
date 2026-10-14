@@ -1,15 +1,25 @@
 require('dotenv').config();
 const path = require('path');
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+const { initSocket } = require('./services/socketService');
+const { seedDefaultCoupons } = require('./controllers/couponController');
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB & Seed initial configurations
+connectDB()
+  .then(() => {
+    seedDefaultCoupons();
+  })
+  .catch((err) => {
+    console.warn('[ShopSphere DB Warning]:', err.message);
+  });
 
 const app = express();
+const server = http.createServer(app);
 
 const allowedOrigins = [
   'http://localhost:5173',
@@ -74,6 +84,8 @@ app.use('/api/support', require('./routes/supportRoutes'));
 app.use('/api/delivery', require('./routes/deliveryRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/coupons', require('./routes/couponRoutes'));
+app.use('/api/chat', require('./routes/chatRoutes'));
 
 // 404 Route handler
 app.use('*', (req, res) => {
@@ -83,10 +95,13 @@ app.use('*', (req, res) => {
 // Centralized error handler
 app.use(errorHandler);
 
+// Initialize Socket.io on the HTTP server
+initSocket(server, allowedOrigins);
+
 const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[ShopSphere Server] Running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`[ShopSphere Server] Running with Socket.io in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   });
 }
 

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { ordersAPI } from '../services/api';
+import { ordersAPI, couponsAPI } from '../services/api';
 import {
   CreditCard,
   ShieldCheck,
@@ -16,6 +16,9 @@ import {
   Lock,
   Loader2,
   Check,
+  Tag,
+  X,
+  Sparkles,
 } from 'lucide-react';
 
 export default function CheckoutPage() {
@@ -39,6 +42,70 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [createdOrder, setCreatedOrder] = useState(null);
+
+  // Coupon Engine State
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState([
+    { code: 'SPHERE10', description: '10% OFF all items', minOrder: 0 },
+    { code: 'SAVE25', description: '$25 OFF orders $150+', minOrder: 150 },
+  ]);
+
+  // Load active coupons
+  React.useEffect(() => {
+    couponsAPI
+      .getActive()
+      .then((res) => {
+        if (res.data?.data && res.data.data.length > 0) {
+          setAvailableCoupons(res.data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleApplyCoupon = async (codeToApply) => {
+    const code = (codeToApply || couponInput || '').trim().toUpperCase();
+    if (!code) {
+      setCouponError('Please enter a coupon code.');
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError(null);
+
+    try {
+      const res = await couponsAPI.apply({
+        code,
+        cartItems,
+        subTotal: itemsSubtotal,
+      });
+
+      if (res.data?.success && res.data.data) {
+        setAppliedCoupon(res.data.data);
+        setCouponInput('');
+      } else {
+        setCouponError(res.data?.message || 'Failed to apply coupon.');
+      }
+    } catch (err) {
+      setCouponError(
+        err.response?.data?.message || `Coupon "${code}" is invalid or does not meet minimum order requirements.`
+      );
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponError(null);
+    setCouponInput('');
+  };
+
+  // Compute final discounted total
+  const couponDiscount = appliedCoupon ? appliedCoupon.discountAmount : 0;
+  const discountedGrandTotal = Math.max(0, Math.round((grandTotal - couponDiscount) * 100) / 100);
 
   // Field touch tracking for real-time validation
   const [touched, setTouched] = useState({
@@ -176,6 +243,7 @@ export default function CheckoutPage() {
         shippingAddress,
         guestEmail: !user ? shippingAddress.email : undefined,
         paymentMethod,
+        couponCode: appliedCoupon ? appliedCoupon.code : undefined,
       });
 
       const orderData = res.data?.data;
@@ -191,7 +259,9 @@ export default function CheckoutPage() {
           _id: 'order_' + Date.now(),
           orderNumber: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
           createdAt: new Date().toISOString(),
-          totalAmount: grandTotal,
+          totalAmount: discountedGrandTotal,
+          discountAmount: couponDiscount,
+          couponCode: appliedCoupon?.code,
           guestEmail: !user ? shippingAddress.email : undefined,
           subOrders: vendorsList.map((v, i) => ({
             _id: 'sub_' + Date.now() + '_' + i,
@@ -754,18 +824,134 @@ export default function CheckoutPage() {
                 <span>Items Subtotal</span>
                 <span className="font-bold text-slate-900 font-outfit">${itemsSubtotal.toFixed(2)}</span>
               </div>
+
+              {/* Coupon Discount Item */}
+              {appliedCoupon && (
+                <div className="flex justify-between text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/80">
+                  <span className="flex items-center gap-1">
+                    <Tag className="w-3.5 h-3.5 text-emerald-600" />
+                    Coupon ({appliedCoupon.code})
+                  </span>
+                  <span className="font-bold font-outfit">-${appliedCoupon.discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between text-slate-600">
                 <span>Multi-Store Delivery</span>
                 <span className="font-bold text-slate-900 font-outfit">
                   {totalShipping === 0 ? 'FREE' : `$${totalShipping.toFixed(2)}`}
                 </span>
               </div>
+
               <div className="flex justify-between text-sm font-bold text-slate-900 pt-2 border-t border-slate-100">
                 <span>Total Amount</span>
-                <span className="font-black text-indigo-600 text-base font-outfit">
-                  ${grandTotal.toFixed(2)}
-                </span>
+                <div className="text-right">
+                  {appliedCoupon && (
+                    <span className="text-xs text-slate-400 line-through mr-2 font-normal">
+                      ${grandTotal.toFixed(2)}
+                    </span>
+                  )}
+                  <span className="font-black text-indigo-600 text-base font-outfit">
+                    ${discountedGrandTotal.toFixed(2)}
+                  </span>
+                </div>
               </div>
+            </div>
+
+            {/* Coupon Code Input & Available Suggestions */}
+            <div className="pt-3 border-t border-slate-100 space-y-2">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-indigo-600" />
+                  Promo / Coupon Code
+                </span>
+                {appliedCoupon && (
+                  <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Active
+                  </span>
+                )}
+              </label>
+
+              {appliedCoupon ? (
+                <div
+                  id="checkout-coupon-success"
+                  className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs"
+                >
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{appliedCoupon.code} Applied</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-700">
+                      Saved ${appliedCoupon.discountAmount.toFixed(2)} on qualifying items!
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="p-1 rounded-lg text-emerald-700 hover:bg-emerald-100 transition-colors"
+                    title="Remove coupon"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      id="checkout-coupon-input"
+                      value={couponInput}
+                      onChange={(e) => {
+                        setCouponInput(e.target.value);
+                        setCouponError(null);
+                      }}
+                      placeholder="e.g. SPHERE10"
+                      className="flex-1 p-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500 uppercase tracking-wider font-semibold"
+                    />
+                    <button
+                      type="button"
+                      id="checkout-coupon-apply-btn"
+                      onClick={() => handleApplyCoupon()}
+                      disabled={couponLoading || !couponInput.trim()}
+                      className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-bold text-xs transition-all shadow-xs"
+                    >
+                      {couponLoading ? 'Checking...' : 'Apply'}
+                    </button>
+                  </div>
+
+                  {couponError && (
+                    <p
+                      id="checkout-coupon-error"
+                      className="text-[11px] text-rose-600 font-semibold flex items-center gap-1"
+                    >
+                      <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                      <span>{couponError}</span>
+                    </p>
+                  )}
+
+                  {/* Available Coupon Chips */}
+                  <div className="pt-1">
+                    <span className="text-[10px] text-slate-400 font-medium block mb-1">
+                      Available offers (click to apply):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {availableCoupons.map((c) => (
+                        <button
+                          key={c.code}
+                          type="button"
+                          onClick={() => handleApplyCoupon(c.code)}
+                          className="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/60 text-[10px] font-bold transition-all flex items-center gap-1"
+                          title={c.description || 'Apply coupon'}
+                        >
+                          <Sparkles className="w-2.5 h-2.5 text-indigo-500" />
+                          {c.code}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Incomplete Form Helper Text */}
@@ -802,7 +988,7 @@ export default function CheckoutPage() {
                 </>
               ) : (
                 <>
-                  <Lock className="w-4 h-4" /> Authorize & Pay ${grandTotal.toFixed(2)}
+                  <Lock className="w-4 h-4" /> Authorize & Pay ${discountedGrandTotal.toFixed(2)}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

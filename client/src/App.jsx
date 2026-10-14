@@ -64,9 +64,17 @@ export default function App() {
                   element={<OrderTrackingPage />}
                 />
 
-                {/* Seller Workspace */}
+                {/* Seller / Vendor Workspace */}
                 <Route
                   path="/seller/dashboard"
+                  element={
+                    <ProtectedRoute allowedRoles={['Seller', 'Platform Admin']}>
+                      <SellerDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/vendor/dashboard"
                   element={
                     <ProtectedRoute allowedRoles={['Seller', 'Platform Admin']}>
                       <SellerDashboard />

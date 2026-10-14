@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const SubOrder = require('../models/SubOrder');
 const Product = require('../models/Product');
 const Store = require('../models/Store');
+const Coupon = require('../models/Coupon');
 const { validateTransition } = require('../services/stateMachine');
 
 // @desc    Atomic Checkout Engine
@@ -144,6 +145,40 @@ exports.checkout = async (req, res, next) => {
       });
     }
 
+    // Step 2.5: Apply Coupon Discount if provided
+    let discountAmount = 0;
+    let couponCode = null;
+
+    if (req.body.couponCode) {
+      const cleanCode = req.body.couponCode.trim().toUpperCase();
+      const coupon = await Coupon.findOne({ code: cleanCode });
+      if (coupon && coupon.isValid().valid) {
+        let applicableSubtotal = 0;
+        if (coupon.scope === 'platform') {
+          applicableSubtotal = verifiedItems.reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
+        } else if (coupon.scope === 'vendor' && coupon.vendorId) {
+          applicableSubtotal = verifiedItems
+            .filter((it) => it.storeId && it.storeId.toString() === coupon.vendorId.toString())
+            .reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
+        }
+
+        if (applicableSubtotal >= coupon.minOrderAmount) {
+          if (coupon.discountType === 'percentage') {
+            discountAmount = (applicableSubtotal * coupon.discountValue) / 100;
+          } else {
+            discountAmount = Math.min(coupon.discountValue, applicableSubtotal);
+          }
+          discountAmount = Math.min(Math.round(discountAmount * 100) / 100, overallTotal);
+          couponCode = cleanCode;
+
+          // Increment coupon usage
+          await Coupon.findByIdAndUpdate(coupon._id, { $inc: { usedCount: 1 } });
+        }
+      }
+    }
+
+    const finalOrderTotal = Math.max(0, Math.round((overallTotal - discountAmount) * 100) / 100);
+
     // Step 3: Create Parent Order
     const customerId = req.user ? req.user._id : null;
     const guestEmail = req.body.guestEmail || shippingAddress.email || null;
@@ -154,7 +189,9 @@ exports.checkout = async (req, res, next) => {
       guestEmail,
       guestName,
       items: verifiedItems,
-      totalAmount: Math.round(overallTotal * 100) / 100,
+      totalAmount: finalOrderTotal,
+      discountAmount,
+      couponCode,
       paymentStatus: 'Paid',
       paymentMethod: paymentMethod || 'Instant Credit Card (Mock)',
       shippingAddress,

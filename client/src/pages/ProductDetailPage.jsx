@@ -19,7 +19,9 @@ import {
   AlertCircle,
   MapPin,
   ArrowRight,
+  MessageSquare,
 } from 'lucide-react';
+import SellerChatModal from '../components/chat/SellerChatModal';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -34,6 +36,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [addedNotice, setAddedNotice] = useState(false);
   const [alternatives, setAlternatives] = useState([]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Review Form state
   const [reviewRating, setReviewRating] = useState(5);
@@ -371,6 +374,18 @@ export default function ProductDetailPage() {
                   </>
                 )}
               </button>
+
+              {/* Chat with Seller Button */}
+              <button
+                type="button"
+                id="product-chat-with-seller-button"
+                onClick={() => setIsChatOpen(true)}
+                className="py-3 px-4 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs"
+                title="Direct inquiry with vendor"
+              >
+                <MessageSquare className="w-4 h-4 text-indigo-600" />
+                <span className="hidden sm:inline">Chat</span>
+              </button>
             </div>
 
             {/* Dynamic Stock Helper / Limit Text */}
@@ -706,6 +721,28 @@ export default function ProductDetailPage() {
           </div>
         </section>
       )}
+
+      {/* Floating Chat with Seller Button */}
+      <button
+        type="button"
+        id="floating-chat-with-seller-button"
+        onClick={() => setIsChatOpen(true)}
+        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full shadow-2xl shadow-indigo-600/40 flex items-center gap-2.5 font-bold text-xs transition-all hover:scale-105 border border-indigo-400/30"
+        title="Chat with Seller"
+      >
+        <div className="relative">
+          <MessageSquare className="w-5 h-5" />
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-indigo-700 animate-pulse" />
+        </div>
+        <span className="hidden sm:inline">Chat with Seller</span>
+      </button>
+
+      {/* Seller Chat Modal */}
+      <SellerChatModal
+        product={product}
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+      />
     </div>
   );
 }
