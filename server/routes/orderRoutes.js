@@ -8,9 +8,9 @@ const {
   cancelSubOrder,
   raiseDispute,
 } = require('../controllers/orderController');
-const { protect, authorizeRoles } = require('../middleware/auth');
+const { protect, authorizeRoles, optionalAuth } = require('../middleware/auth');
 
-router.post('/checkout', protect, authorizeRoles('Customer', 'Platform Admin'), checkout);
+router.post('/checkout', optionalAuth, checkout);
 router.get('/my', protect, authorizeRoles('Customer', 'Platform Admin'), getMyOrders);
 router.get('/:id', protect, getOrderById);
 router.get('/suborders/:subOrderId', protect, getSubOrderById);

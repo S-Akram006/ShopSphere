@@ -145,8 +145,14 @@ exports.checkout = async (req, res, next) => {
     }
 
     // Step 3: Create Parent Order
+    const customerId = req.user ? req.user._id : null;
+    const guestEmail = req.body.guestEmail || shippingAddress.email || null;
+    const guestName = shippingAddress.fullName || null;
+
     const parentOrder = new Order({
-      customerId: req.user._id,
+      customerId,
+      guestEmail,
+      guestName,
       items: verifiedItems,
       totalAmount: Math.round(overallTotal * 100) / 100,
       paymentStatus: 'Paid',
@@ -162,7 +168,7 @@ exports.checkout = async (req, res, next) => {
     for (const sData of subOrderDataList) {
       const subOrder = await SubOrder.create({
         parentOrderId: parentOrder._id,
-        customerId: req.user._id,
+        customerId,
         storeId: sData.storeId,
         items: sData.items,
         subTotal: sData.subTotal,
@@ -172,8 +178,8 @@ exports.checkout = async (req, res, next) => {
         statusHistory: [
           {
             status: 'Placed',
-            note: 'Order placed by customer and payment authorized.',
-            updatedBy: req.user._id,
+            note: customerId ? 'Order placed by customer and payment authorized.' : 'Order placed via guest checkout.',
+            updatedBy: customerId,
           },
         ],
       });

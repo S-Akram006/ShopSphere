@@ -8,6 +8,8 @@ import { LocationProvider } from './context/LocationContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
+import CartFeedbackToast from './components/CartFeedbackToast';
+import CartDrawer from './components/CartDrawer';
 
 // Public & Customer Pages
 import HomePage from './pages/HomePage';
@@ -36,6 +38,8 @@ export default function App() {
             <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white">
             {/* Navigation Header */}
             <Navbar />
+            <CartFeedbackToast />
+            <CartDrawer />
 
             {/* Main Application Routes Viewport */}
             <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8">
@@ -44,18 +48,9 @@ export default function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/products/:id" element={<ProductDetailPage />} />
                 <Route path="/cart" element={<CartPage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
-
-                {/* Customer Checkout & Tracking */}
-                <Route
-                  path="/checkout"
-                  element={
-                    <ProtectedRoute allowedRoles={['Customer', 'Platform Admin']}>
-                      <CheckoutPage />
-                    </ProtectedRoute>
-                  }
-                />
                 <Route
                   path="/orders/my"
                   element={

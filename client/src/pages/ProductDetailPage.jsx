@@ -18,6 +18,7 @@ import {
   Send,
   AlertCircle,
   MapPin,
+  ArrowRight,
 } from 'lucide-react';
 
 export default function ProductDetailPage() {
@@ -32,6 +33,7 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedNotice, setAddedNotice] = useState(false);
+  const [alternatives, setAlternatives] = useState([]);
 
   // Review Form state
   const [reviewRating, setReviewRating] = useState(5);
@@ -84,6 +86,25 @@ export default function ProductDetailPage() {
   useEffect(() => {
     fetchProduct();
   }, [id]);
+
+  useEffect(() => {
+    if (!product) return;
+    let pool = DEFAULT_CATALOG_ITEMS;
+    try {
+      const custom = JSON.parse(localStorage.getItem('shopsphere_custom_products') || '[]');
+      pool = [...custom, ...pool];
+    } catch (e) {}
+
+    const alts = pool.filter(
+      (p) =>
+        p._id !== product._id &&
+        p.stock > 0 &&
+        (p.category?.toLowerCase() === product.category?.toLowerCase() ||
+          p.tags?.some((t) => product.tags?.includes(t)))
+    ).slice(0, 4);
+
+    setAlternatives(alts);
+  }, [product]);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -276,22 +297,40 @@ export default function ProductDetailPage() {
             </div>
           )}
 
+          {/* Out of Stock Notice Banner */}
+          {currentStock <= 0 && (
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1">
+              <div className="flex items-center gap-2 font-bold text-sm text-rose-900">
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                <span>Currently Out of Stock</span>
+              </div>
+              <p>
+                Purchasing for this product is disabled while the vendor replenishes inventory. Explore our recommended in-stock alternatives below.
+              </p>
+            </div>
+          )}
+
           {/* Quantity and Add to Cart */}
           <div className="space-y-3 pt-4 border-t border-slate-100">
             <div className="flex items-center gap-3">
               <div className="flex items-center border border-slate-200 rounded-xl bg-white overflow-hidden">
                 <button
                   type="button"
+                  disabled={currentStock <= 0 || quantity <= 1}
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-3.5 py-2.5 hover:bg-slate-100 text-slate-600 font-bold"
+                  className="px-3.5 py-2.5 hover:bg-slate-100 text-slate-600 font-bold disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   -
                 </button>
-                <span className="px-4 py-2.5 text-xs font-bold text-slate-900">{quantity}</span>
+                <span className="px-4 py-2.5 text-xs font-bold text-slate-900">
+                  {currentStock <= 0 ? 0 : quantity}
+                </span>
                 <button
                   type="button"
+                  disabled={currentStock <= 0 || quantity >= currentStock}
                   onClick={() => setQuantity(Math.min(currentStock, quantity + 1))}
-                  className="px-3.5 py-2.5 hover:bg-slate-100 text-slate-600 font-bold"
+                  className="px-3.5 py-2.5 hover:bg-slate-100 text-slate-600 font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                  title={quantity >= currentStock ? `Max available stock (${currentStock}) reached` : 'Increase quantity'}
                 >
                   +
                 </button>
@@ -299,17 +338,22 @@ export default function ProductDetailPage() {
 
               <button
                 type="button"
+                id="product-add-to-cart-button"
                 onClick={handleAddToCart}
                 disabled={currentStock <= 0}
                 className={`flex-1 py-3 px-6 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md ${
                   addedNotice
                     ? 'bg-emerald-600 text-white'
                     : currentStock <= 0
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none'
                     : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/25'
                 }`}
               >
-                {addedNotice ? (
+                {currentStock <= 0 ? (
+                  <>
+                    <AlertCircle className="w-4 h-4" /> Out of Stock — Purchasing Disabled
+                  </>
+                ) : addedNotice ? (
                   <>
                     <Check className="w-4 h-4" /> Added to Multi-Vendor Cart!
                   </>
@@ -320,6 +364,13 @@ export default function ProductDetailPage() {
                 )}
               </button>
             </div>
+
+            {/* Dynamic Stock Helper / Limit Text */}
+            {currentStock > 0 && quantity >= currentStock && (
+              <p className="text-[11px] font-semibold text-amber-600">
+                ⚠️ Reached maximum available stock ({currentStock} units).
+              </p>
+            )}
           </div>
 
           {/* Customer Location & Shipping ETA Box */}
@@ -561,6 +612,92 @@ export default function ProductDetailPage() {
           </form>
         </div>
       </div>
+
+      {/* Recommended Alternative In-Stock Products Section */}
+      {alternatives.length > 0 && (
+        <section className="pt-10 border-t border-slate-200 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                {currentStock <= 0 ? 'Verified In-Stock Alternatives' : 'Recommended Related Gear'}
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 font-outfit">
+                {currentStock <= 0
+                  ? `In-Stock Alternatives in ${product.category}`
+                  : `More Popular Options in ${product.category}`}
+              </h2>
+              {currentStock <= 0 && (
+                <p className="text-xs text-slate-500 mt-0.5">
+                  The item above is sold out. Explore these available verified products that match your requirements.
+                </p>
+              )}
+            </div>
+            <Link to="/" className="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1">
+              Browse all items <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {alternatives.map((alt) => (
+              <div
+                key={alt._id}
+                className="group bg-white rounded-2xl border border-slate-200/90 hover:border-indigo-300 hover:shadow-xl transition-all p-3.5 flex flex-col justify-between"
+              >
+                <div>
+                  <Link
+                    to={`/products/${alt._id}`}
+                    className="block relative aspect-square rounded-xl overflow-hidden bg-slate-100 mb-3"
+                  >
+                    <img
+                      src={alt.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80'}
+                      alt={alt.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <span className="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
+                      {alt.stock} in stock
+                    </span>
+                  </Link>
+
+                  <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">
+                    {alt.category}
+                  </span>
+                  <Link to={`/products/${alt._id}`}>
+                    <h4 className="text-xs font-bold text-slate-900 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                      {alt.title}
+                    </h4>
+                  </Link>
+                </div>
+
+                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-black text-slate-900 font-outfit">
+                      ${alt.discountPrice > 0 && alt.discountPrice < alt.price ? alt.discountPrice : alt.price}
+                    </span>
+                    <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                      <span>{alt.ratingAverage || 5.0}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const v = alt.variants && alt.variants.length > 0 ? alt.variants[0] : null;
+                      addToCart(alt, 1, v);
+                    }}
+                    className="py-1.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 transition-all text-xs font-bold flex items-center gap-1 shadow-xs"
+                    title="Quick Add alternative to cart"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    <span>Add</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -23,7 +23,7 @@ import {
 
 export default function Navbar() {
   const { user, role, logout } = useAuth();
-  const { totalItems } = useCart();
+  const { totalItems, badgePulse, openDrawer } = useCart();
   const { customerLocation, setIsModalOpen } = useCustomerLocation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -202,18 +202,26 @@ export default function Navbar() {
           {/* Right Action Icons: Cart & Profile */}
           <div className="flex items-center gap-3">
             {/* Cart Button */}
-            <Link
-              to="/cart"
+            {/* Cart Button with Animated Badge Increment */}
+            <button
+              type="button"
+              id="navbar-cart-button"
+              onClick={openDrawer}
               className="relative p-2.5 rounded-xl text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-              title="Shopping Cart"
+              title="Shopping Cart & Fast Drawer"
             >
               <ShoppingCart className="w-5 h-5" />
               {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm animate-scale">
+                <span
+                  key={totalItems}
+                  className={`absolute -top-1 -right-1 bg-indigo-600 text-white text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md transition-all duration-300 ${
+                    badgePulse ? 'scale-130 bg-emerald-500 ring-4 ring-emerald-200' : 'scale-100'
+                  }`}
+                >
                   {totalItems}
                 </span>
               )}
-            </Link>
+            </button>
 
             {/* User Dropdown / Auth Actions */}
             {user ? (

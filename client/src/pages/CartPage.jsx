@@ -112,72 +112,119 @@ export default function CartPage() {
 
               {/* Items List */}
               <div className="divide-y divide-slate-100">
-                {vendor.items.map((item) => (
-                  <div
-                    key={`${item.productId}-${item.variantSku || 'base'}`}
-                    className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <img
-                        src={item.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=200&q=80'}
-                        alt={item.title}
-                        className="w-16 h-16 rounded-xl object-cover border border-slate-100 flex-shrink-0"
-                      />
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-bold text-slate-900 line-clamp-1">
-                          {item.title}
-                        </h4>
-                        {item.variantSku && (
-                          <div className="text-[11px] text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded-md inline-block">
-                            Variant: {item.variantSku}
+                {vendor.items.map((item) => {
+                  const maxStock = item.stock || 99;
+                  const isMax = item.quantity >= maxStock;
+
+                  return (
+                    <div
+                      key={`${item.productId}-${item.variantSku || 'base'}`}
+                      className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <img
+                          src={item.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=200&q=80'}
+                          alt={item.title}
+                          className="w-16 h-16 rounded-xl object-cover border border-slate-100 flex-shrink-0"
+                        />
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-bold text-slate-900 line-clamp-1">
+                            {item.title}
+                          </h4>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {item.variantSku && (
+                              <span className="text-[11px] text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded-md inline-block">
+                                Variant: {item.variantSku}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-slate-400">
+                              Available stock: {maxStock}
+                            </span>
                           </div>
-                        )}
-                        <div className="text-xs font-semibold text-slate-700 font-outfit">
-                          ${item.price} each
+                          <div className="text-xs font-semibold text-slate-700 font-outfit">
+                            ${item.price} each
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Quantity Adjustment & Subtotal */}
-                    <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
-                      <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
+                      {/* Quantity Adjustment & Subtotal with Stock Capping */}
+                      <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden shadow-2xs">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateQuantity(item.productId, item.variantSku, item.quantity - 1)
+                              }
+                              className="px-2.5 py-1 text-xs hover:bg-slate-100 font-bold"
+                            >
+                              -
+                            </button>
+                            <span className="px-3 py-1 text-xs font-bold text-slate-800">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={isMax}
+                              onClick={() =>
+                                updateQuantity(item.productId, item.variantSku, item.quantity + 1)
+                              }
+                              className={`px-2.5 py-1 text-xs font-bold ${
+                                isMax
+                                  ? 'text-slate-300 cursor-not-allowed bg-slate-50'
+                                  : 'text-slate-700 hover:bg-slate-100'
+                              }`}
+                              title={isMax ? `Max available stock (${maxStock}) reached` : 'Increment'}
+                            >
+                              +
+                            </button>
+                          </div>
+                          {isMax && (
+                            <span className="text-[10px] text-amber-600 font-semibold">
+                              Max stock reached ({maxStock})
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="text-right min-w-[70px]">
+                          <span className="text-sm font-black text-slate-900 font-outfit">
+                            ${(item.price * item.quantity).toFixed(2)}
+                          </span>
+                        </div>
+
                         <button
-                          onClick={() =>
-                            updateQuantity(item.productId, item.variantSku, item.quantity - 1)
-                          }
-                          className="px-2.5 py-1 text-xs hover:bg-slate-100 font-bold"
+                          type="button"
+                          onClick={() => removeFromCart(item.productId, item.variantSku)}
+                          className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
+                          title="Remove item"
                         >
-                          -
-                        </button>
-                        <span className="px-3 py-1 text-xs font-bold text-slate-800">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() =>
-                            updateQuantity(item.productId, item.variantSku, item.quantity + 1)
-                          }
-                          className="px-2.5 py-1 text-xs hover:bg-slate-100 font-bold"
-                        >
-                          +
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-
-                      <div className="text-right min-w-[70px]">
-                        <span className="text-sm font-black text-slate-900 font-outfit">
-                          ${(item.price * item.quantity).toFixed(2)}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={() => removeFromCart(item.productId, item.variantSku)}
-                        className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
-                        title="Remove item"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
+                  );
+                })}
+              </div>
+
+              {/* Vendor Individual Sub-Summary Footer */}
+              <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 text-slate-600">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>
+                    Fulfillment by <strong>{vendor.storeName}</strong> • Dispatches direct as independent vendor sub-order.
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4 self-end sm:self-auto text-right">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold block">
+                      Vendor Sub-Summary ({vendor.itemsCount} items)
+                    </span>
+                    <span className="text-sm font-black text-slate-900 font-outfit">
+                      ${vendor.total.toFixed(2)}
+                    </span>
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           ))}

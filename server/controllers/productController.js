@@ -27,13 +27,39 @@ exports.getProducts = async (req, res, next) => {
       query.deliveryZones = { $in: ['Nationwide', deliveryZone] };
     }
 
-    // Keyword search across title, description, and tags
+    // Tolerant keyword search across title, description, category, and tags
     if (keyword && keyword.trim()) {
-      query.$or = [
-        { title: { $regex: keyword.trim(), $options: 'i' } },
-        { description: { $regex: keyword.trim(), $options: 'i' } },
-        { tags: { $in: [new RegExp(keyword.trim(), 'i')] } },
+      const cleanKw = keyword.trim();
+      const tokens = cleanKw.split(/\s+/).filter(Boolean);
+
+      const orConditions = [
+        { title: { $regex: cleanKw, $options: 'i' } },
+        { description: { $regex: cleanKw, $options: 'i' } },
+        { category: { $regex: cleanKw, $options: 'i' } },
+        { tags: { $in: [new RegExp(cleanKw, 'i')] } },
       ];
+
+      // Add tolerant stem patterns for plurals/singulars (e.g. headphone <-> headphones, watch <-> watches)
+      tokens.forEach((tok) => {
+        let base = tok.replace(/[^a-zA-Z0-9]/g, '');
+        if (base.endsWith('ies') && base.length > 4) {
+          base = base.slice(0, -3);
+        } else if (base.endsWith('es') && base.length > 3) {
+          base = base.slice(0, -2);
+        } else if (base.endsWith('s') && base.length > 2) {
+          base = base.slice(0, -1);
+        }
+        if (base.length >= 3) {
+          const stemRegex = new RegExp(base + '(s|es|ies)?', 'i');
+          orConditions.push(
+            { title: { $regex: stemRegex } },
+            { category: { $regex: stemRegex } },
+            { tags: { $in: [stemRegex] } }
+          );
+        }
+      });
+
+      query.$or = orConditions;
     }
 
     if (category && category !== 'All') {

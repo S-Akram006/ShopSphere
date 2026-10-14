@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { productsAPI, aiAPI } from '../services/api';
 import { DEFAULT_CATALOG_ITEMS } from '../services/catalogConstants';
 import { useCart } from '../context/CartContext';
 import { useLocation } from '../context/LocationContext';
+import { fuzzyMatchProduct } from '../utils/fuzzySearch';
 import {
   Search,
   Sparkles,
@@ -19,22 +20,52 @@ import {
   ArrowRight,
   MapPin,
   Truck,
+  RotateCcw,
 } from 'lucide-react';
 
 export default function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [keyword, setKeyword] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  // Restore active filters, search query, and scroll position from session
+  const savedState = (() => {
+    try {
+      const s = sessionStorage.getItem('shopsphere_catalog_state');
+      return s ? JSON.parse(s) : null;
+    } catch (e) {
+      return null;
+    }
+  })();
+
+  const [keyword, setKeyword] = useState(savedState?.keyword || '');
+  const [selectedCategory, setSelectedCategory] = useState(savedState?.selectedCategory || 'All');
   const [categories, setCategories] = useState([]);
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState(savedState?.sortBy || 'newest');
   const [isAiSearch, setIsAiSearch] = useState(false);
   const [aiIntents, setAiIntents] = useState([]);
   const [addedId, setAddedId] = useState(null);
-  const [onlyDeliverable, setOnlyDeliverable] = useState(false);
+  const [onlyDeliverable, setOnlyDeliverable] = useState(savedState?.onlyDeliverable || false);
+  const [scrollRestored, setScrollRestored] = useState(false);
 
   const { addToCart } = useCart();
   const { customerLocation, canDeliverTo, getDeliveryETA, setIsModalOpen } = useLocation();
+
+  // Save current active state to session storage
+  const saveStateToSession = (extra = {}) => {
+    try {
+      sessionStorage.setItem(
+        'shopsphere_catalog_state',
+        JSON.stringify({
+          keyword,
+          selectedCategory,
+          sortBy,
+          onlyDeliverable,
+          scrollY: window.scrollY,
+          ...extra,
+        })
+      );
+    } catch (e) {}
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -81,15 +112,18 @@ export default function HomePage() {
       merged = merged.filter((p) => p.category?.toLowerCase() === selectedCategory.toLowerCase());
     }
 
-    // Filter by keyword if present
+    // Tolerant / fuzzy search keyword filtering (handles typos, plurals, stems)
     if (keyword.trim()) {
-      const term = keyword.trim().toLowerCase();
-      merged = merged.filter(
-        (p) =>
-          p.title?.toLowerCase().includes(term) ||
-          p.description?.toLowerCase().includes(term) ||
-          p.tags?.some((t) => t.toLowerCase().includes(term))
-      );
+      merged = merged.filter((p) => fuzzyMatchProduct(p, keyword.trim()));
+    }
+
+    // Client-side sorting guarantee (works online & offline)
+    if (sortBy === 'price-low') {
+      merged.sort((a, b) => ((a.discountPrice > 0 ? a.discountPrice : a.price) - (b.discountPrice > 0 ? b.discountPrice : b.price)));
+    } else if (sortBy === 'price-high') {
+      merged.sort((a, b) => ((b.discountPrice > 0 ? b.discountPrice : b.price) - (a.discountPrice > 0 ? a.discountPrice : a.price)));
+    } else if (sortBy === 'rating') {
+      merged.sort((a, b) => (b.ratingAverage || 5.0) - (a.ratingAverage || 5.0));
     }
 
     setProducts(merged);
@@ -103,6 +137,21 @@ export default function HomePage() {
   useEffect(() => {
     fetchProducts();
   }, [selectedCategory, sortBy]);
+
+  // Restore scroll position after initial load
+  useEffect(() => {
+    if (!loading && savedState?.scrollY && !scrollRestored) {
+      setScrollRestored(true);
+      setTimeout(() => {
+        window.scrollTo({ top: savedState.scrollY, behavior: 'instant' });
+      }, 50);
+    }
+  }, [loading, scrollRestored]);
+
+  // Persist state whenever filters change
+  useEffect(() => {
+    saveStateToSession();
+  }, [keyword, selectedCategory, sortBy, onlyDeliverable]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -319,7 +368,11 @@ export default function HomePage() {
                 className="group bg-white rounded-2xl border border-slate-200/80 hover:border-indigo-300 hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden"
               >
                 {/* Product Image Container */}
-                <Link to={`/products/${product._id}`} className="relative block h-56 bg-slate-100 overflow-hidden">
+                <Link
+                  to={`/products/${product._id}`}
+                  onClick={() => saveStateToSession({ scrollY: window.scrollY })}
+                  className="relative block h-56 bg-slate-100 overflow-hidden"
+                >
                   <img
                     src={product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80'}
                     alt={product.title}
@@ -367,7 +420,10 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    <Link to={`/products/${product._id}`}>
+                    <Link
+                      to={`/products/${product._id}`}
+                      onClick={() => saveStateToSession({ scrollY: window.scrollY })}
+                    >
                       <h3 className="text-sm font-bold text-slate-900 line-clamp-2 group-hover:text-indigo-600 transition-colors">
                         {product.title}
                       </h3>
