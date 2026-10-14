@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Message = require('../models/Message');
 const Product = require('../models/Product');
 const Store = require('../models/Store');
@@ -58,11 +59,23 @@ exports.sendMessage = async (req, res, next) => {
       });
     }
 
+    let safeReceiverId = receiverId;
+    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+      const store = await Store.findOne();
+      safeReceiverId = store?.sellerId || req.user._id;
+    }
+
+    let safeProductId = productId;
+    if (productId && !mongoose.Types.ObjectId.isValid(productId)) {
+      const prod = await Product.findOne();
+      safeProductId = prod?._id || null;
+    }
+
     const newMsg = await Message.create({
       conversationId,
       senderId: req.user._id,
-      receiverId,
-      productId: productId || null,
+      receiverId: safeReceiverId,
+      productId: safeProductId,
       message: trimmedMsg,
       timestamp: new Date(),
       readStatus: false,

@@ -126,6 +126,10 @@ exports.getProducts = async (req, res, next) => {
 // @access  Public
 exports.getProductById = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
     const product = await Product.findById(req.params.id)
       .populate('storeId', 'storeName description logo banner ratingAverage contactEmail');
 

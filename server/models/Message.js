@@ -8,20 +8,17 @@ const messageSchema = new mongoose.Schema(
       index: true,
     },
     senderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      type: mongoose.Schema.Types.Mixed,
       required: [true, 'Sender ID is required'],
       index: true,
     },
     receiverId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      type: mongoose.Schema.Types.Mixed,
       required: [true, 'Receiver ID is required'],
       index: true,
     },
     productId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product',
+      type: mongoose.Schema.Types.Mixed,
       default: null,
       index: true,
     },

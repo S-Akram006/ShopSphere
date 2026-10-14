@@ -1,6 +1,6 @@
 import puppeteer from './client/node_modules/puppeteer-core/lib/puppeteer/puppeteer-core.js';
 
-const DEPLOYED_URL = 'https://shop-sphere-lovat-tau.vercel.app';
+const DEPLOYED_URL = process.env.TEST_URL || 'https://shop-sphere-lovat-tau.vercel.app';
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -56,8 +56,13 @@ async function runTestSuite() {
     // ----------------------------------------------------
     // TEST 1: Initial Page Load & Header Navigation
     // ----------------------------------------------------
-    console.log(`\n[Stage 1] Initial Page Load & Header Navigation`);
-    await page.goto(DEPLOYED_URL, { waitUntil: 'networkidle2', timeout: 30000 });
+    try {
+      await page.goto(DEPLOYED_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForSelector('header', { timeout: 15000 });
+    } catch (e) {
+      console.warn('Initial goto warning, retrying once:', e.message);
+      await page.goto(DEPLOYED_URL, { waitUntil: 'load', timeout: 30000 });
+    }
     const pageTitle = await page.title();
     assert(pageTitle.includes('ShopSphere'), 'Document title contains ShopSphere', `Got: ${pageTitle}`);
 

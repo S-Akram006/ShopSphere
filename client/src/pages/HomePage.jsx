@@ -87,6 +87,18 @@ export default function HomePage() {
         if (res.data?.categories) {
           cats = res.data.categories;
         }
+        // If backend exact search returns 0 items, fetch category/all items so client-side fuzzy search can match typos and plurals
+        if (items.length === 0 && keyword.trim()) {
+          try {
+            const fallbackRes = await productsAPI.getAll({
+              category: selectedCategory !== 'All' ? selectedCategory : undefined,
+              sortBy,
+            });
+            if (fallbackRes.data?.data?.length) {
+              items = fallbackRes.data.data;
+            }
+          } catch (e) {}
+        }
         setAiIntents([]);
       }
     } catch (err) {

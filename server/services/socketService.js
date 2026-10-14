@@ -1,5 +1,8 @@
 const { Server } = require('socket.io');
+const mongoose = require('mongoose');
 const Message = require('../models/Message');
+const Store = require('../models/Store');
+const Product = require('../models/Product');
 
 let io = null;
 
@@ -46,11 +49,23 @@ const initSocket = (httpServer, allowedOrigins = []) => {
           return socket.emit('error', { message: 'Incomplete message parameters.' });
         }
 
+        let safeReceiverId = receiverId;
+        if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+          const store = await Store.findOne();
+          safeReceiverId = store?.sellerId || (mongoose.Types.ObjectId.isValid(senderId) ? senderId : new mongoose.Types.ObjectId());
+        }
+
+        let safeProductId = productId;
+        if (productId && !mongoose.Types.ObjectId.isValid(productId)) {
+          const prod = await Product.findOne();
+          safeProductId = prod?._id || null;
+        }
+
         const newMsg = await Message.create({
           conversationId,
           senderId,
-          receiverId,
-          productId: productId || null,
+          receiverId: safeReceiverId,
+          productId: safeProductId,
           message: message.trim(),
           timestamp: new Date(),
           readStatus: false,

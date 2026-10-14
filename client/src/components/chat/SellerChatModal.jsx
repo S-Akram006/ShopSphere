@@ -28,11 +28,11 @@ export default function SellerChatModal({ product, isOpen, onClose }) {
   const typingTimeoutRef = useRef(null);
 
   // Compute consistent conversationId: productId_buyerId_vendorId
-  const storeId = product?.storeId?._id || product?.storeId;
+  const storeId = product?.storeId?._id || product?.storeId || 'store_official';
   const storeName = product?.storeId?.storeName || 'Official Merchant';
   const buyerId = user?._id || 'guest_buyer';
   const vendorSellerId = product?.storeId?.sellerId || storeId || 'vendor_rep';
-  const conversationId = `${product?._id}_${buyerId}_${storeId}`;
+  const conversationId = `${product?._id || 'prod_general'}_${buyerId}_${storeId}`;
 
   // Auto-scroll to bottom of message list
   const scrollToBottom = (smooth = true) => {
