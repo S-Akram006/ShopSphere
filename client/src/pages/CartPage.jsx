@@ -207,7 +207,10 @@ export default function CartPage() {
               </div>
 
               {/* Vendor Individual Sub-Summary Footer */}
-              <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div
+                data-testid="vendor-sub-summary"
+                className="vendor-sub-summary-box bg-slate-50 p-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+              >
                 <div className="flex items-center gap-2 text-slate-600">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                   <span>
@@ -217,7 +220,10 @@ export default function CartPage() {
 
                 <div className="flex items-center gap-4 self-end sm:self-auto text-right">
                   <div className="space-y-0.5">
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold block">
+                    <span
+                      data-testid="vendor-sub-summary-text"
+                      className="text-[10px] text-slate-400 uppercase tracking-wider font-bold block"
+                    >
                       Vendor Sub-Summary ({vendor.itemsCount} items)
                     </span>
                     <span className="text-sm font-black text-slate-900 font-outfit">

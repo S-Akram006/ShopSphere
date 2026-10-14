@@ -194,8 +194,11 @@ export default function CartDrawer() {
                   </div>
 
                   {/* Vendor Subtotal footer */}
-                  <div className="bg-slate-50/60 px-3.5 py-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
-                    <span>Store Subtotal + Delivery:</span>
+                  <div
+                    data-testid="drawer-vendor-sub-summary"
+                    className="bg-slate-50/60 px-3.5 py-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600"
+                  >
+                    <span>Vendor Sub-Summary ({vendor.itemsCount} items):</span>
                     <span className="font-bold text-slate-900 font-outfit">
                       ${vendor.total.toFixed(2)}
                     </span>
