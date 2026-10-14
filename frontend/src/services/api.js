@@ -1,12 +1,23 @@
 import axios from 'axios';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' &&
-  window.location.hostname !== 'localhost' &&
-  window.location.hostname !== '127.0.0.1'
-    ? '/api'
-    : 'http://localhost:5000/api');
+// Normalize API Base URL: handle missing or duplicate /api prefixes and trailing slashes
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+    const trimmed = envUrl.trim().replace(/\/+$/, '');
+    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+  }
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  ) {
+    return '/api';
+  }
+  return 'http://localhost:5000/api';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -15,9 +26,12 @@ const api = axios.create({
   },
 });
 
-// Attach JWT access token to every request
+// Attach JWT access token to every request and prevent duplicate /api prefix
 api.interceptors.request.use(
   (config) => {
+    if (config.url && config.url.startsWith('/api/')) {
+      config.url = config.url.replace(/^\/api/, '');
+    }
     const token = localStorage.getItem('shopsphere_access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

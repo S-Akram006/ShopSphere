@@ -65,16 +65,12 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Healthcheck
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'online',
-    app: 'ShopSphere Enterprise Multi-Vendor Platform',
-    timestamp: new Date().toISOString(),
-  });
-});
+app.get('/api/health', (req, res) => res.json({ status: 'ok', app: 'ShopSphere Enterprise Multi-Vendor Platform' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', app: 'ShopSphere Enterprise Multi-Vendor Platform' }));
 
 // API Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/auth', require('./routes/authRoutes')); // Alias to prevent 404 if client omits /api prefix
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/stores', require('./routes/storeRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
@@ -87,9 +83,10 @@ app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 
-// 404 Route handler
-app.use('*', (req, res) => {
-  res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
+// Catch-all route handler for unmatched requests
+app.use((req, res) => {
+  console.warn(`[404 Not Found] ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ error: `Cannot ${req.method} ${req.originalUrl}` });
 });
 
 // Centralized error handler
