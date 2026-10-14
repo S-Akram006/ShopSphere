@@ -64,9 +64,9 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// Healthcheck
-app.get('/api/health', (req, res) => res.json({ status: 'ok', app: 'ShopSphere Enterprise Multi-Vendor Platform' }));
-app.get('/health', (req, res) => res.json({ status: 'ok', app: 'ShopSphere Enterprise Multi-Vendor Platform' }));
+// Top-level health endpoints
+app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok', timestamp: new Date() }));
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok', timestamp: new Date() }));
 
 // API Routes
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -85,7 +85,7 @@ app.use('/api/chat', require('./routes/chatRoutes'));
 
 // Catch-all route handler for unmatched requests
 app.use((req, res) => {
-  console.warn(`[404 Not Found] ${req.method} ${req.originalUrl}`);
+  console.warn(`[404] Unmatched Route: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ error: `Cannot ${req.method} ${req.originalUrl}` });
 });
 

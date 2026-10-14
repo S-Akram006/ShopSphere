@@ -1,26 +1,18 @@
 import axios from 'axios';
 
-// Normalize API Base URL: handle missing or duplicate /api prefixes and trailing slashes
-const getApiBaseUrl = () => {
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
-    const trimmed = envUrl.trim().replace(/\/+$/, '');
-    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
-  }
-  if (
-    typeof window !== 'undefined' &&
-    window.location.hostname !== 'localhost' &&
-    window.location.hostname !== '127.0.0.1'
-  ) {
-    return '/api';
-  }
-  return 'http://localhost:5000/api';
-};
+const RAW_BASE =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' &&
+  window.location.hostname !== 'localhost' &&
+  window.location.hostname !== '127.0.0.1'
+    ? window.location.origin
+    : 'http://localhost:5000');
 
-export const API_BASE_URL = getApiBaseUrl();
+// Strip trailing slashes and normalize base URL (remove trailing /api so we cleanly attach /api)
+export const API_BASE_URL = RAW_BASE.replace(/\/+$/, '').replace(/\/api$/, '');
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -83,6 +75,8 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'),
   getMe: () => api.get('/auth/me'),
 };
+
+export const loginUser = (credentials) => api.post('/auth/login', credentials);
 
 // Products Endpoints
 export const productsAPI = {
